@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leafhash Demo</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2e8b57;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 20px;
+            color: #2e8b57;
+            margin-bottom: 15px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .product-card {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        .product-card img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .product-card h3 {
+            font-size: 18px;
+            margin: 0 0 10px;
+            color: #2e8b57;
+        }
+        .product-card p {
+            font-size: 14px;
+            margin: 0 0 10px;
+            color: #666;
+        }
+        .product-card button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #3cb371, #2e8b57);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .product-card button:hover {
+            background: linear-gradient(45deg, #2e8b57, #3cb371);
+        }
+        #balance {
+            margin-bottom: 20px;
+        }
+        #balance p {
+            font-size: 18px;
+            margin: 0;
+        }
+        #balance button {
+            margin-top: 10px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+        }
+        .modal-header button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .modal-content img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .modal-content h3 {
+            font-size: 24px;
+            margin: 0 0 10px;
+            color: #2e8b57;
+        }
+        .modal-content p {
+            font-size: 16px;
+            margin: 0 0 15px;
+            color: #666;
+        }
+        .modal-content button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #3cb371, #2e8b57);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .modal-content button:hover {
+            background: linear-gradient(45deg, #2e8b57, #3cb371);
+        }
+        .garden-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .garden-item {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .garden-item img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .garden-item h3 {
+            font-size: 18px;
+            margin: 0 0 10px;
+            color: #2e8b57;
+        }
+        .garden-item p {
+            font-size: 14px;
+            margin: 0 0 10px;
+            color: #666;
+        }
+        .garden-item button {
+            margin: 5px;
+            padding: 8px 12px;
+            background-color: #2196F3;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .garden-item button:hover {
+            background-color: #1e88e5;
+        }
+        #cart {
+            margin-top: 20px;
+        }
+        #cart-items {
+            margin-bottom: 10px;
+        }
+        .order-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌿 Leafhash Demo</h1>
+        <div id="balance">
+            <p>Баланс: <span id="leafhash">1000</span> leafhash</p>
+            <button onclick="buyLeafhash(100)">💰 Купить 100 leafhash (1 USD)</button>
+        </div>
+
+        <!-- Магазин готовых плодов -->
+        <div id="fruit-shop">
+            <h2>🛒 Магазин готовых плодов</h2>
+            <div class="grid">
+                <div class="product-card" onclick="openModal('fruit', 1)">
+                    <img src="https://via.placeholder.com/300x200" alt="Кактус">
+                    <h3>🌵 Кактус</h3>
+                    <p>Колючий и выносливый.</p>
+                    <button onclick="buyProduct('fruit', 1, event)">Купить за 200 leafhash</button>
+                </div>
+                <div class="product-card" onclick="openModal('fruit', 2)">
+                    <img src="https://via.placeholder.com/300x200" alt="Роза">
+                    <h3>🌹 Роза</h3>
+                    <p>Нежная и ароматная.</p>
+                    <button onclick="buyProduct('fruit', 2, event)">Купить за 400 leafhash</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Корзина готовых плодов -->
+        <div id="cart">
+            <h2>🛍️ Корзина готовых плодов</h2>
+            <div class="grid" id="cart-items"></div>
+            <div class="order-summary">
+                <p>Итого: <span id="total">0</span> leafhash</p>
+                <button onclick="confirmOrder()">✅ Забрать плоды</button>
+            </div>
+        </div>
+
+        <!-- Магазин семян -->
+        <div id="seed-shop">
+            <h2>🌱 Магазин семян</h2>
+            <div class="grid">
+                <div class="product-card" onclick="openModal('seed', 1)">
+                    <img src="https://via.placeholder.com/300x200" alt="Семя кактуса">
+                    <h3>🌵 Семя кактуса</h3>
+                    <p>Вырастите колючего друга.</p>
+                    <button onclick="buyProduct('seed', 1, event)">Купить за 50 leafhash</button>
+                </div>
+                <div class="product-card" onclick="openModal('seed', 2)">
+                    <img src="https://via.placeholder.com/300x200" alt="Семя розы">
+                    <h3>🌹 Семя розы</h3>
+                    <p>Вырастите ароматную розу.</p>
+                    <button onclick="buyProduct('seed', 2, event)">Купить за 100 leafhash</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Мой сад -->
+        <div id="garden">
+            <h2>🌿 Мой сад</h2>
+            <div class="garden-grid" id="garden-items"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для товара -->
+    <div id="productModal" class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle"></h2>
+            <button onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-content">
+            <img id="modalImage" src="" alt="Товар">
+            <p id="modalDescription"></p>
+            <button id="modalBuyButton">Купить</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно для подтверждения покупки -->
+    <div id="purchaseModal" class="modal">
+        <div class="modal-header">
+            <h2>Покупка завершена</h2>
+            <button onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-content">
+            <p id="purchaseMessage"></p>
+            <button onclick="closeModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready(); // Инициализация Mini App
+
+        let leafhash = 1000; // Начальный баланс
+        let garden = []; // Мой сад
+        let cart = []; // Корзина готовых плодов
+
+        // Данные товаров
+        const products = {
+            fruit: {
+                1: {
+                    name: "🌵 Кактус",
+                    description: "Колючий и выносливый. Идеально для засушливых условий.",
+                    price: 200,
+                    image: "https://via.placeholder.com/300x200"
+                },
+                2: {
+                    name: "🌹 Роза",
+                    description: "Нежная и ароматная. Украсит любой сад.",
+                    price: 400,
+                    image: "https://via.placeholder.com/300x200"
+                }
+            },
+            seed: {
+                1: {
+                    name: "🌵 Семя кактуса",
+                    description: "Вырастите колючего друга.",
+                    price: 50,
+                    image: "https://via.placeholder.com/300x200"
+                },
+                2: {
+                    name: "🌹 Семя розы",
+                    description: "Вырастите ароматную розу.",
+                    price: 100,
+                    image: "https://via.placeholder.com/300x200"
+                }
+            }
+        };
+
+        // Функция для покупки leafhash
+        function buyLeafhash(amount) {
+            const price = amount / 100; // 1 USD за 100 leafhash
+            if (confirm(`Вы уверены, что хотите купить ${amount} leafhash за ${price} USD?`)) {
+                leafhash += amount;
+                alert(`Вы купили ${amount} leafhash!`);
+                updateBalance();
+            }
+        }
+
+        // Функция для покупки товара
+        function buyProduct(type, id, event) {
+            event.stopPropagation(); // Останавливаем всплытие события
+            const product = products[type][id];
+            if (leafhash >= product.price) {
+                leafhash -= product.price;
+                if (type === 'fruit') {
+                    cart.push({ id: cart.length + 1, type: product.name, value: product.price / 2 });
+                    showPurchaseModal(`Вы купили ${product.name}!`);
+                    updateCart();
+                } else if (type === 'seed') {
+                    garden.push({
+                        id: garden.length + 1,
+                        type: product.name,
+                        progress: 0,
+                        waterCount: 0,
+                        fertilizeCount: 0,
+                        image: product.image
+                    });
+                    showPurchaseModal(`Вы купили ${product.name}!`);
+                    updateGarden();
+                }
+            } else {
+                alert("Недостаточно leafhash!");
+            }
+        }
+
+        // Функция для оформления заказа (забрать плоды)
+        function confirmOrder() {
+            if (cart.length > 0) {
+                if (confirm("Вы уверены, что хотите забрать плоды?")) {
+                    // Плоды забираются, валюта не возвращается
+                    cart = []; // Очищаем корзину
+                    alert("Плоды успешно забраны! Скоро они будут у вас.");
+                    updateCart();
+                }
+            } else {
+                alert("Корзина пуста!");
+            }
+        }
+
+        // Функция для полива растения
+        function waterPlant(plantId) {
+            const plant = garden.find(p => p.id === plantId);
+            if (plant) {
+                plant.waterCount += 1;
+                plant.progress += 10; // Ускорение роста
+                alert(`Вы полили ${plant.type}!`);
+                updateGarden();
+            }
+        }
+
+        // Функция для удобрения растения
+        function fertilizePlant(plantId) {
+            const plant = garden.find(p => p.id === plantId);
+            if (plant) {
+                plant.fertilizeCount += 1;
+                plant.progress += 20; // Ускорение роста
+                alert(`Вы удобрили ${plant.type}!`);
+                updateGarden();
+            }
+        }
+
+        // Функция для сбора плодов
+        function harvestPlant(plantId) {
+            const plant = garden.find(p => p.id === plantId);
+            if (plant && plant.progress >= 100) {
+                const fruits = 10 + (plant.waterCount * 1) + (plant.fertilizeCount * 3);
+                leafhash += fruits;
+                garden = garden.filter(p => p.id !== plantId); // Удаляем растение
+                alert(`Вы собрали плоды и получили ${fruits} leafhash!`);
+                updateGarden();
+            } else {
+                alert("Растение еще не выросло!");
+            }
+        }
+
+        // Функция для открытия модального окна
+        function openModal(type, id) {
+            const product = products[type][id];
+            document.getElementById('modalTitle').textContent = product.name;
+            document.getElementById('modalImage').src = product.image;
+            document.getElementById('modalDescription').textContent = product.description;
+            document.getElementById('modalBuyButton').onclick = (event) => buyProduct(type, id, event);
+            document.getElementById('productModal').style.display = 'block';
+        }
+
+        // Функция для закрытия модального окна
+        function closeModal() {
+            document.getElementById('productModal').style.display = 'none';
+            document.getElementById('purchaseModal').style.display = 'none';
+        }
+
+        // Функция для показа модального окна покупки
+        function showPurchaseModal(message) {
+            document.getElementById('purchaseMessage').textContent = message;
+            document.getElementById('purchaseModal').style.display = 'block';
+        }
+
+        // Функция для обновления корзины
+        function updateCart() {
+            const cartItems = document.getElementById('cart-items');
+            const total = cart.reduce((sum, fruit) => sum + fruit.value, 0);
+            cartItems.innerHTML = cart.map(fruit => `
+                <div class="product-card">
+                    <h3>${fruit.type}</h3>
+                    <p>${fruit.value} leafhash</p>
+                </div>
+            `).join('');
+            document.getElementById('total').textContent = total;
+            updateBalance();
+        }
+
+        // Функция для обновления сада
+        function updateGarden() {
+            const gardenItems = document.getElementById('garden-items');
+            gardenItems.innerHTML = garden.map(plant => `
+                <div class="garden-item">
+                    <img src="${plant.image}" alt="${plant.type}">
+                    <h3>${plant.type} (${plant.progress}%)</h3>
+                    <button onclick="waterPlant(${plant.id})">💧 Полить</button>
+                    <button onclick="fertilizePlant(${plant.id})">🌱 Удобрить</button>
+                    <button onclick="harvestPlant(${plant.id})">🛒 Собрать плоды</button>
+                </div>
+            `).join('');
+            updateBalance();
+        }
+
+        // Функция для обновления баланса
+        function updateBalance() {
+            document.getElementById('leafhash').textContent = leafhash;
+        }
+
+        updateCart(); // Инициализация корзины
+        updateGarden(); // Инициализация сада
+    </script>
+</body>
+</html>
